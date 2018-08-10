@@ -2,8 +2,8 @@ package services
 
 import connectors.MongoConnector
 import helpers.UnitSpec
-import models.exceptions.{ConflictingRecordException, InvalidDetailsException}
-import models.{EncryptedString, EncryptedUserModel, UserModel}
+import models.exceptions.{ConflictingRecordException, InsufficientAuthLevelException, InvalidDetailsException}
+import models.{EncryptedString, EncryptedUserModel, UserDetailsModel, UserModel}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito._
 import org.scalatest.mockito.MockitoSugar
@@ -74,7 +74,7 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
 
       "the save method returns an exception" in {
         val service = setupService(Future.successful(None), Future.failed(new Exception("test error")))
-        val result = the[Exception] thrownBy await(service.register(userModel))
+        val result = the[Exception] thrownBy await(service.register(userModel.copy(authLevel = 50)))
 
         result should have message "test error"
       }
@@ -231,14 +231,14 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
         val service = setupService(Future.successful(Some(encryptedUserModel)), Future.successful(mock[UpdateWriteResult]))
         val result = await(service.authorise("token"))
 
-        result shouldBe true
+        result shouldBe UserDetailsModel("username", "email@example.com", 100)
       }
 
       "found user has a greater than required authorisation level" in {
         val service = setupService(Future.successful(Some(encryptedUserModel.copy(authLevel = AuthLevels.moderator))), Future.successful(mock[UpdateWriteResult]))
         val result = await(service.authorise("token"))
 
-        result shouldBe true
+        result shouldBe UserDetailsModel("username", "email@example.com", 100)
       }
     }
 
@@ -246,16 +246,16 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
 
       "no matching user is found" in {
         val service = setupService(Future.successful(None), Future.successful(mock[UpdateWriteResult]))
-        val result = await(service.authorise("token"))
+        val result = service.authorise("token")
 
-        result shouldBe false
+        the[InvalidDetailsException] thrownBy await(result) should have message "Invalid username and/or password"
       }
 
       "found user has too low an authorisation level" in {
         val service = setupService(Future.successful(Some(encryptedUserModel)), Future.successful(mock[UpdateWriteResult]))
-        val result = await(service.authorise("token", AuthLevels.moderator))
+        val result = service.authorise("token", AuthLevels.moderator)
 
-        result shouldBe false
+        the[InsufficientAuthLevelException] thrownBy await(result) should have message "Level of 200 is insufficient to access a level of 100 for this resource"
       }
     }
   }

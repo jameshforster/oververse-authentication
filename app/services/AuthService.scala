@@ -4,8 +4,8 @@ import java.util.UUID
 
 import com.google.inject.{Inject, Singleton}
 import connectors.MongoConnector
-import models.exceptions.{ConflictingRecordException, InvalidDetailsException}
-import models.{EncryptedUserModel, UserModel}
+import models.exceptions.{ConflictingRecordException, InsufficientAuthLevelException, InvalidDetailsException}
+import models.{EncryptedUserModel, UserDetailsModel, UserModel}
 import play.api.libs.json.{JsObject, Json}
 import reactivemongo.api.commands.UpdateWriteResult
 import utils.AuthLevels
@@ -70,12 +70,14 @@ class AuthService @Inject()(encryptionService: EncryptionService, mongoConnector
     }
   }
 
-  def authorise(token: String, requiredLevel: Int = AuthLevels.verified): Future[Boolean] = {
+  def authorise(token: String, requiredLevel: Int = AuthLevels.verified): Future[UserDetailsModel] = {
     mongoConnector.findData[EncryptedUserModel]("users", JsObject(Map("authToken" -> Json.toJson(encryptionService.encrypt(token))))).map {
       case Some(eUser) =>
         val user = encryptionService.decryptUser(eUser)
-        user.authToken.exists(_.equals(token) && user.authLevel >= requiredLevel)
-      case None => false
+        if (user.authToken.getOrElse(throw new InvalidDetailsException).equals(token) && user.authLevel >= requiredLevel)
+          UserDetailsModel(user.username, user.email, user.authLevel)
+        else throw new InsufficientAuthLevelException(requiredLevel, user.authLevel)
+      case None => throw new InvalidDetailsException
     }
   }
 }

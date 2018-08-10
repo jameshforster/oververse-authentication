@@ -22,9 +22,8 @@ class UserController @Inject()(val controllerComponents: ControllerComponents, a
             Ok(Json.toJson(token))
           }
         } else request2session.get("authToken").map { authToken =>
-          authService.authorise(authToken, AuthLevels.admin).flatMap { result =>
-            if (result) authService.register(model).map(_ => Ok)
-            else Future.successful(Forbidden)
+          authService.authorise(authToken, AuthLevels.admin).flatMap { _ =>
+            authService.register(model).map(_ => Ok)
           }
         }.getOrElse(Future.successful(Unauthorized))
     }
@@ -33,8 +32,7 @@ class UserController @Inject()(val controllerComponents: ControllerComponents, a
   def authorise(requestedAuth: Int): Action[AnyContent] = Action.async { implicit request =>
     request2session.get("authToken").map { authToken =>
       authService.authorise(authToken, requestedAuth).flatMap { result =>
-        if (result) Future.successful(Ok)
-        else Future.successful(Forbidden)
+        Future.successful(Ok(Json.toJson(result)))
       }
     }.getOrElse(Future.successful(Unauthorized))
   }
