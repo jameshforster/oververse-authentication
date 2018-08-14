@@ -10,8 +10,8 @@ GET     /assets/*file               controllers.Assets.versioned(path="/public",
 
 # Main routes
 
-POST    /authentication/user/register           controllers.UserController.register
-GET     /authentication/user/authorise          controllers.UserController.authorise(requiredLevel: Int ?= 100)
-POST    /authentication/user/login              controllers.UserController.login
-POST    /authentication/user/change-password    controllers.UserController.changePassword
-POST    /authentication/user/update-email       controllers.UserController.updateEmail
+POST    /authentication/user/register                       controllers.UserController.register
+POST    /authentication/user/authorise/:requiredLevel       controllers.UserController.authorise(requiredLevel: Int)
+POST    /authentication/user/login                          controllers.UserController.login
+POST    /authentication/user/change-password                controllers.UserController.changePassword
+POST    /authentication/user/update-email                   controllers.UserController.updateEmail

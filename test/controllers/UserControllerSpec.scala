@@ -109,7 +109,7 @@ class UserControllerSpec extends UnitSpec with GuiceOneAppPerSuite with MockitoS
 
       "submitting a request with the required authorisation" in {
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.successful(UserDetailsModel("name", "email", 50)))
-        val result = controller.authorise(AuthLevels.verified)(fakeRequest.withSession("authToken" -> "token"))
+        val result = controller.authorise(AuthLevels.verified)(fakeRequest.withJsonBody(Json.toJson("token")))
 
         statusOf(result) shouldBe 200
       }
@@ -119,19 +119,19 @@ class UserControllerSpec extends UnitSpec with GuiceOneAppPerSuite with MockitoS
 
       "submitting a request without the required authorisation" in {
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.failed(new InsufficientAuthLevelException(200, 50)))
-        val result = controller.authorise(AuthLevels.verified)(fakeRequest.withSession("authToken" -> "token"))
+        val result = controller.authorise(AuthLevels.verified)(fakeRequest.withJsonBody(Json.toJson("token")))
 
         the [InsufficientAuthLevelException] thrownBy await(result) should have message "Level of 200 is insufficient to access a level of 50 for this resource"
       }
     }
 
-    "return an unauthorised response" when {
+    "return a bad request response" when {
 
       "submitting a request without a token" in {
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.successful(UserDetailsModel("name", "email", 50)))
         val result = controller.authorise(AuthLevels.verified)(fakeRequest)
 
-        statusOf(result) shouldBe 401
+        statusOf(result) shouldBe 400
       }
     }
 
@@ -139,7 +139,7 @@ class UserControllerSpec extends UnitSpec with GuiceOneAppPerSuite with MockitoS
 
       "the service throws an exception" in {
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.failed(new Exception("test exception")))
-        val result = controller.authorise(AuthLevels.verified)(fakeRequest.withSession("authToken" -> "token"))
+        val result = controller.authorise(AuthLevels.verified)(fakeRequest.withJsonBody(Json.toJson("token")))
 
         the [Exception] thrownBy await(result) should have message "test exception"
       }

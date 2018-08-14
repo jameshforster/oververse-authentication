@@ -2,9 +2,8 @@ package controllers
 
 import com.google.inject.{Inject, Singleton}
 import models.{LoginModel, UpdateUserModel, UserModel}
-import play.api.Logger
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Session}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import services.AuthService
 import utils.AuthLevels
 
@@ -29,12 +28,11 @@ class UserController @Inject()(val controllerComponents: ControllerComponents, a
     }
   }
 
-  def authorise(requestedAuth: Int): Action[AnyContent] = Action.async { implicit request =>
-    request2session.get("authToken").map { authToken =>
+  def authorise(requestedAuth: Int): Action[AnyContent] = JsonAction.async[String] { authToken =>
+    implicit request =>
       authService.authorise(authToken, requestedAuth).flatMap { result =>
         Future.successful(Ok(Json.toJson(result)))
       }
-    }.getOrElse(Future.successful(Unauthorized))
   }
 
   val login: Action[AnyContent] = {
