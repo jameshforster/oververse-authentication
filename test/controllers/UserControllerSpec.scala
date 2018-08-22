@@ -54,7 +54,7 @@ class UserControllerSpec extends UnitSpec with GuiceOneAppPerSuite with MockitoS
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.successful(UserDetailsModel("name", "email", 50)))
         val result = controller.register(fakeRequestWithBody(Json.toJson(UserModel("name", "email", "password", AuthLevels.verified, None))).withSession("authToken" -> "token"))
 
-        statusOf(result) shouldBe 200
+        statusOf(result) shouldBe 204
       }
     }
 
@@ -188,7 +188,7 @@ class UserControllerSpec extends UnitSpec with GuiceOneAppPerSuite with MockitoS
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.successful(UserDetailsModel("name", "email", 50)))
         val result = controller.changePassword(fakeRequestWithBody(Json.toJson(UpdateUserModel("username", "password", "newPassword"))))
 
-        statusOf(result) shouldBe 200
+        statusOf(result) shouldBe 204
       }
     }
 
@@ -211,7 +211,7 @@ class UserControllerSpec extends UnitSpec with GuiceOneAppPerSuite with MockitoS
         val controller = setupController(Future.successful(Some("token")), Future.successful(mock[UpdateWriteResult]), Future.successful(UserDetailsModel("name", "email", 50)))
         val result = controller.updateEmail(fakeRequestWithBody(Json.toJson(UpdateUserModel("username", "password", "newPassword"))))
 
-        statusOf(result) shouldBe 200
+        statusOf(result) shouldBe 204
       }
     }
 

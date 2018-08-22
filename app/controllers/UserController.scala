@@ -22,7 +22,7 @@ class UserController @Inject()(val controllerComponents: ControllerComponents, a
           }
         } else request2session.get("authToken").map { authToken =>
           authService.authorise(authToken, AuthLevels.admin).flatMap { _ =>
-            authService.register(model).map(_ => Ok)
+            authService.register(model).map(_ => NoContent)
           }
         }.getOrElse(Future.successful(Unauthorized))
     }
@@ -48,14 +48,14 @@ class UserController @Inject()(val controllerComponents: ControllerComponents, a
   val changePassword: Action[AnyContent] = {
     JsonAction.async[UpdateUserModel] { model =>
       implicit request =>
-        authService.changePassword(model.username, model.password, model.updatedValue).map(_ => Ok)
+        authService.changePassword(model.username, model.password, model.updatedValue).map(_ => NoContent)
     }
   }
 
   val updateEmail: Action[AnyContent] = {
     JsonAction.async[UpdateUserModel] { model =>
       implicit request =>
-        authService.updateEmail(model.username, model.password, model.updatedValue).map(_ => Ok)
+        authService.updateEmail(model.username, model.password, model.updatedValue).map(_ => NoContent)
     }
   }
 }
