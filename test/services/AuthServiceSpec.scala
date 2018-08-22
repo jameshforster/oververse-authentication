@@ -18,7 +18,7 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
   val userModel = UserModel("username", "email@example.com", "password", AuthLevels.verified, Some("token"))
   val encryptedUserModel = EncryptedUserModel("username", EncryptedString("encryptedEmail"), EncryptedString("encryptedPassword"), AuthLevels.verified, Some(EncryptedString("token")))
 
-  def setupService(user: Future[Option[EncryptedUserModel]], save: Future[UpdateWriteResult]): AuthService = {
+  def setupService(user: Future[Option[EncryptedUserModel]], save: Future[UpdateWriteResult], withToken: Boolean = true): AuthService = {
     val mockConnector = mock[MongoConnector]
     val mockService = mock[EncryptionService]
 
@@ -29,10 +29,10 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
       .thenReturn(save)
 
     when(mockService.encryptUser(ArgumentMatchers.any[UserModel]))
-      .thenReturn(encryptedUserModel)
+      .thenReturn(if (withToken) encryptedUserModel else encryptedUserModel.copy(authToken = None))
 
     when(mockService.decryptUser(ArgumentMatchers.any[EncryptedUserModel]))
-      .thenReturn(userModel)
+      .thenReturn(if (withToken) userModel else userModel.copy(authToken = None))
 
     when(mockService.encrypt(ArgumentMatchers.any()))
       .thenReturn(EncryptedString("encryptedString"))
@@ -242,7 +242,7 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
       }
     }
 
-    "return a false" when {
+    "throw an InvalidDetailsException" when {
 
       "no matching user is found" in {
         val service = setupService(Future.successful(None), Future.successful(mock[UpdateWriteResult]))
@@ -256,6 +256,13 @@ class AuthServiceSpec extends UnitSpec with MockitoSugar {
         val result = service.authorise("token", AuthLevels.moderator)
 
         the[InsufficientAuthLevelException] thrownBy await(result) should have message "Level of 200 is insufficient to access a level of 100 for this resource"
+      }
+
+      "a matching user is found without an auth token" in {
+        val service = setupService(Future.successful(Some(encryptedUserModel.copy(authToken = None))), Future.successful(mock[UpdateWriteResult]), false)
+        val result = service.authorise("token")
+
+        the[InvalidDetailsException] thrownBy await(result) should have message "Invalid username and/or password"
       }
     }
   }
